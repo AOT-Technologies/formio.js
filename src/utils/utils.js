@@ -204,7 +204,7 @@ function getConditionalPathsRecursive(conditionPaths, data) {
     return (String(value) === eq) === (show === 'true');
   }
   else {
-    const { conditions = [], conjunction = 'all', show = true } = condition;
+    const { conditions = [], conjunction = 'all',  show = true } = condition;
 
     if (!conditions.length) {
       return true;
@@ -212,7 +212,6 @@ function getConditionalPathsRecursive(conditionPaths, data) {
 
     const conditionsResult = _.map(conditions, (cond) => {
       const { value: comparedValue, operator, component: conditionComponentPath } = cond;
-
       if (!conditionComponentPath) {
         return true;
       }
@@ -253,7 +252,6 @@ function getConditionalPathsRecursive(conditionPaths, data) {
   }
 }
 
-/**
 /**
 Function to get the conditionalComparisonOptions based on component data type
  * @param componentDataType
@@ -296,12 +294,6 @@ export const getConditionalComparisonOptions = (componentDataType) => {
  * @param {*} data - The data object to get the value from.
  * @param {*} row - The contextual row data for the component.
  * @returns {*} - The normalized value of the component.
- */
-/**
- *
- * @param compPath
- * @param data
- * @param row
  */
 export function getComponentActualValue(compPath, data, row) {
   let value = null;
@@ -574,10 +566,10 @@ export function uniqueName(name, template, evalContext) {
  */
 export function guid() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = Math.random() * 16 | 0;
+    const r = Math.random()*16|0;
     const v = c === 'x'
       ? r
-      : (r & 0x3 | 0x8);
+      : (r&0x3|0x8);
     return v.toString(16);
   });
 }
@@ -710,17 +702,17 @@ export function loadZones(url, timezone) {
     return moment.zonesPromise;
   }
   return moment.zonesPromise = fetch(url)
-    .then(resp => resp.json().then(zones => {
-      moment.tz.load(zones);
-      moment.zonesLoaded = true;
+  .then(resp => resp.json().then(zones => {
+    moment.tz.load(zones);
+    moment.zonesLoaded = true;
 
-      // Trigger a global event that the timezones have finished loading.
-      if (document && document.createEvent && document.body && document.body.dispatchEvent) {
-        var event = document.createEvent('Event');
-        event.initEvent('zonesLoaded', true, true);
-        document.body.dispatchEvent(event);
-      }
-    }));
+    // Trigger a global event that the timezones have finished loading.
+    if (document && document.createEvent && document.body && document.body.dispatchEvent) {
+      var event = document.createEvent('Event');
+      event.initEvent('zonesLoaded', true, true);
+      document.body.dispatchEvent(event);
+    }
+  }));
 }
 
 /**
@@ -838,7 +830,7 @@ export function getLocaleDateFormatInfo(locale) {
  */
 export function convertFormatToFlatpickr(format) {
   return format
-    // Remove the Z timezone offset, not supported by flatpickr.
+  // Remove the Z timezone offset, not supported by flatpickr.
     .replace(/Z/g, '')
 
     // Year conversion.
@@ -875,7 +867,7 @@ export function convertFormatToFlatpickr(format) {
  */
 export function convertFormatToMoment(format) {
   return format
-    // Year conversion.
+  // Year conversion.
     .replace(/y/g, 'Y')
     // Day in month.
     .replace(/d/g, 'D')
@@ -894,7 +886,7 @@ export function convertFormatToMoment(format) {
  */
 export function convertFormatToMask(format) {
   return format
-    // Long month replacement.
+  // Long month replacement.
     .replace(/M{4}/g, 'MM')
     // Initial short month conversion.
     .replace(/M{3}/g, '***')
@@ -1325,7 +1317,6 @@ export function getContextComponents(context, excludeNested, excludedTypes = [])
       values.push({
         label: `${component.label || component.key} (${path})`,
         value: path,
-        dataType: component.type
       });
     }
   });
@@ -1618,18 +1609,18 @@ export function getBrowserInfo() {
 
   const ua = window.navigator.userAgent.toLowerCase();
   const match = /(edge|edg)\/([\w.]+)/.exec(ua) ||
-    /(opr)[/]([\w.]+)/.exec(ua) ||
-    /(yabrowser)[ /]([\w.]+)/.exec(ua) ||
-    /(chrome)[ /]([\w.]+)/.exec(ua) ||
-    /(iemobile)[/]([\w.]+)/.exec(ua) ||
-    /(version)(applewebkit)[ /]([\w.]+).*(safari)[ /]([\w.]+)/.exec(ua) ||
-    /(webkit)[ /]([\w.]+).*(version)[ /]([\w.]+).*(safari)[ /]([\w.]+)/.exec(ua) ||
-    /(webkit)[ /]([\w.]+)/.exec(ua) ||
-    /(opera)(?:.*version|)[ /]([\w.]+)/.exec(ua) ||
-    /(msie) ([\w.]+)/.exec(ua) ||
-    ua.indexOf('trident') >= 0 && /(rv)(?::| )([\w.]+)/.exec(ua) ||
-    ua.indexOf('compatible') < 0 && /(mozilla)(?:.*? rv:([\w.]+)|)/.exec(ua) ||
-    [];
+                /(opr)[/]([\w.]+)/.exec(ua) ||
+                /(yabrowser)[ /]([\w.]+)/.exec(ua) ||
+                /(chrome)[ /]([\w.]+)/.exec(ua) ||
+                /(iemobile)[/]([\w.]+)/.exec(ua) ||
+                /(version)(applewebkit)[ /]([\w.]+).*(safari)[ /]([\w.]+)/.exec(ua) ||
+                /(webkit)[ /]([\w.]+).*(version)[ /]([\w.]+).*(safari)[ /]([\w.]+)/.exec(ua) ||
+                /(webkit)[ /]([\w.]+)/.exec(ua) ||
+                /(opera)(?:.*version|)[ /]([\w.]+)/.exec(ua) ||
+                /(msie) ([\w.]+)/.exec(ua) ||
+                ua.indexOf('trident') >= 0 && /(rv)(?::| )([\w.]+)/.exec(ua) ||
+                ua.indexOf('compatible') < 0 && /(mozilla)(?:.*? rv:([\w.]+)|)/.exec(ua) ||
+                [];
   const matched = {
     browser: match[5] || match[3] || match[1] || '',
     version: match[4] || match[2] || '0'
@@ -1700,12 +1691,12 @@ export function getDataParentComponent(componentInstance) {
  * @param {any} value - The value to check
  * @returns {boolean} - TRUE if the value is a promise; FALSE otherwise
  */
-export function isPromise(value) {
-  return value
-    && value.then
-    && typeof value.then === 'function'
-    && Object.prototype.toString.call(value) === '[object Promise]';
-}
+ export function isPromise(value) {
+   return value
+     && value.then
+     && typeof value.then === 'function'
+     && Object.prototype.toString.call(value) === '[object Promise]';
+ }
 
 /**
  * Returns all the focusable elements within the provided dom element.
@@ -1747,6 +1738,7 @@ export function getComponentSavedTypes(fullSchema) {
 
   return null;
 }
+
 
 /**
  *
@@ -1797,4 +1789,3 @@ export const interpolateErrors = (component, errors, interpolateFn) => {
 };
 
 export const listOfComponentsForConditionalChaining = ['textfield', 'textarea', 'number', 'password', 'checkbox', 'selectboxes', 'select', 'currency', 'radio', 'email', 'url', 'phoneNumber', 'address', 'datetime', 'time', 'day','hidden'];
-
