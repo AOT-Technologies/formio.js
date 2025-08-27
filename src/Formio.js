@@ -95,6 +95,29 @@ FormioCore.prototype.deleteFile = function(file, options) {
   return FormioCore.pluginAlter('wrapFileRequestPromise', request, requestArgs);
 };
 
+// Current User Error Handling Plugin
+const currentUserErrorHandlerPlugin = {
+  __name: 'currentUserErrorHandler',
+  priority: 100,
+  
+  init: function(Formio) {
+    this._originalEvents = Formio.events || {};
+  },
+  
+  wrapRequestPromise: function(promise, requestArgs) {
+    if (requestArgs?.type === 'currentUser') {
+      return promise.catch((error) => {
+        console.warn(error.message);
+        return null
+      });
+    }
+    return promise;
+  },
+};
+
+// Register the current user error handling plugin
+FormioCore.registerPlugin(currentUserErrorHandlerPlugin, 'currentUserErrorHandler');
+
 // Esnure we proxy the following methods to the FormioEmbed class.
 ['setBaseUrl', 'setApiUrl', 'setAppUrl', 'setProjectUrl', 'setPathType', 'setLicense'].forEach((fn) => {
   const baseFn = FormioCore[fn];
