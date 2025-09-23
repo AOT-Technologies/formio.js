@@ -11,7 +11,7 @@ import Utils from './utils';
 import Licenses from './licenses';
 import EventEmitter from './EventEmitter';
 import Webform from './Webform';
-import { Evaluator, registerEvaluator } from './utils';
+import { Evaluator, registerEvaluator, DefaultEvaluator } from './utils';
 
 Formio.loadModules = (path = `${Formio.getApiUrl()}/externalModules.js`, name = 'externalModules') => {
   Formio.requireLibrary(name, name, path, true)
@@ -32,6 +32,7 @@ Formio.Widgets = Widgets;
 Formio.Evaluator = Evaluator;
 Formio.AllComponents = AllComponents;
 Formio.Licenses = Licenses;
+Formio.DefaultEvaluator = DefaultEvaluator;
 
 // This is strange, but is needed for "premium" components to import correctly.
 Formio.Formio = Formio;
@@ -61,6 +62,10 @@ export function registerModule(mod, defaultFn = null, options = {}) {
       case 'templates':
         for (const framework of Object.keys(mod.templates)) {
           Formio.Templates.extendTemplate(framework, mod.templates[framework]);
+          Formio.Templates.defaultTemplates = _.defaults(
+            mod.templates[framework],
+            Formio.Templates.defaultTemplates
+          );
         }
         if (mod.templates[current]) {
           Formio.Templates.current = mod.templates[current];
@@ -134,4 +139,4 @@ Formio.use = useModule();
 export { Formio as FormioCore } from './Formio';
 
 // Export the components.
-export { Components, Displays, Providers, Widgets, Templates, Utils, Form, Formio, Licenses, EventEmitter, Webform };
+export { Components, Displays, Providers, Widgets, Templates, Utils, Form, Formio, Licenses, EventEmitter, Webform, DefaultEvaluator };

@@ -109,6 +109,10 @@ export default class FormComponent extends Component {
     return this.createSubForm();
   }
 
+  shouldConditionallyClearOnPristine() {
+    return !this.hasSetValue && super.shouldConditionallyClearOnPristine();
+  }
+
   get dataReady() {
     return this.subFormReady || Promise.resolve();
   }
@@ -321,29 +325,36 @@ export default class FormComponent extends Component {
           }
 
           this.setContent(element, this.render());
+          const postAttach = () => {
+            if (!this.builderMode && this.component.modalEdit) {
+              const modalShouldBeOpened = this.componentModal ? this.componentModal.isOpened : false;
+              const currentValue = modalShouldBeOpened ? this.componentModal.currentValue : this.dataValue;
+              this.componentModal = new ComponentModal(this, element, modalShouldBeOpened, currentValue, this._referenceAttributeName);
+              this.subForm.element = this.componentModal.refs.componentContent || this.subForm.element;
+              this.setOpenModalElement();
+            }
+            this.calculateValue();
+          };
+
           if (this.subForm) {
             if (this.isNestedWizard) {
               element = this.root.element;
             }
-            this.subForm.attach(element);
-            this.valueChanged = this.hasSetValue;
-
-            if (!this.valueChanged && this.dataValue.state !== 'submitted') {
-              this.setDefaultValue();
-            }
-            else {
-              this.restoreValue();
-            }
+            return this.subForm.attach(element).then(() => {
+              this.valueChanged = this.hasSetValue;
+              if (!this.shouldConditionallyClear()) {
+                if (!this.valueChanged && this.dataValue.state !== 'submitted') {
+                  this.setDefaultValue();
+                }
+                else {
+                  this.restoreValue();
+                }
+              }
+              postAttach();
+              this.setComponentsMap();
+            });
           }
-          if (!this.builderMode && this.component.modalEdit) {
-            const modalShouldBeOpened = this.componentModal ? this.componentModal.isOpened : false;
-            const currentValue = modalShouldBeOpened ? this.componentModal.currentValue : this.dataValue;
-            this.componentModal = new ComponentModal(this, element, modalShouldBeOpened, currentValue, this._referenceAttributeName);
-            this.subForm.element = this.componentModal.refs.componentContent || this.subForm.element;
-            this.setOpenModalElement();
-          }
-
-          this.calculateValue();
+          postAttach();
         });
       });
   }
@@ -431,6 +442,14 @@ export default class FormComponent extends Component {
     }
   }
 
+  setComponentsMap() {
+    if (!this.subForm) {
+      return;
+    }
+    const componentsMap = this.componentsMap;
+    const formComponentsMap = this.subForm.componentsMap;
+    _.assign(componentsMap, formComponentsMap);
+  }
   /**
    * Create a subform instance.
    * @param {boolean} [fromAttach] - This function is being called from an `attach` method.
@@ -458,13 +477,11 @@ export default class FormComponent extends Component {
         this.subForm = instance;
         this.subForm.currentForm = this;
         this.subForm.parentVisible = this.visible;
-        const componentsMap = this.componentsMap;
-        const formComponentsMap = this.subForm.componentsMap;
-        _.assign(componentsMap, formComponentsMap);
+        this.setComponentsMap();
         this.component.components = this.subForm._form?.components;
         this.component.display = this.subForm._form?.display;
         this.subForm.on('change', () => {
-          if (this.subForm) {
+          if (this.subForm && !this.shouldConditionallyClear()) {
             this.dataValue = this.subForm.getValue();
             this.triggerChange({
               noEmit: true
@@ -752,21 +769,7 @@ export default class FormComponent extends Component {
   }
 
   isEmpty(value = this.dataValue) {
-    return value === null || _.isEqual(value, this.emptyValue) || (this.areAllComponentsEmpty(value?.data) && !value?._id);
-  }
-
-  areAllComponentsEmpty(data) {
-    let res = true;
-    if (this.subForm) {
-      this.subForm.everyComponent((comp) => {
-        const componentValue = _.get(data, comp.key);
-        res &= comp.isEmpty(componentValue);
-      });
-    }
-    else {
-      res = false;
-    }
-    return res;
+    return value === null || _.isEqual(value, this.emptyValue);
   }
 
   getValue() {

@@ -497,6 +497,31 @@ describe('SaveDraft functionality for Nested Form', () => {
     }).catch((err) => done(err));
   });
 
+  it('Should not create a draft submission for nested form if Save as reference is set to false', function(done) {
+    _.set(comp7.components[1], 'reference', false);
+    const formElement = document.createElement('div');
+    Formio.createForm(
+      formElement,
+      'http://localhost:3000/idwqwhclwioyqbw/testdraftparent',
+      {
+        saveDraft: true
+      }
+    ).then((form)=>{
+      setTimeout(() => {
+        const tfNestedInput = form.getComponent('form.nested').refs.input[0];
+        tfNestedInput.value = 'test Nested Input';
+        const inputEvent = new Event('input');
+        tfNestedInput.dispatchEvent(inputEvent);
+        setTimeout(() => {
+          assert.equal(saveDraftCalls, 1);
+          assert.equal(state, 'draft');
+          _.unset(comp7.components[1], 'reference');
+          done();
+        }, 1000);
+      }, 200);
+    }).catch((err) => done(err));
+  });
+
   it('Should pass all the required options to the nested form properly', function(done) {
     const formElement = document.createElement('div');
     Formio.createForm(
@@ -584,9 +609,9 @@ describe('Disabled clearOnHide functionality for Nested Form', () => {
       instance.submit().then(() => {
         assert.equal(loadSubForm, true);
         assert.equal(submitSubForm, true);
-        assert.deepEqual(subFormSubmission.data, { textField: 'test' });
+        assert.deepEqual(subFormSubmission.data, { textField: 'test', textArea: '' });
         assert.equal(mainFormSubmission.data?.form?._id, 'nestedSubmissionId');
-        assert.deepEqual(mainFormSubmission.data?.form?.data, { textField: 'test' });
+        assert.deepEqual(mainFormSubmission.data?.form?.data, { textField: 'test', textArea: '' });
         done();
       });
     }).catch((err) => done(err));
@@ -604,7 +629,7 @@ describe('Disabled clearOnHide functionality for Nested Form', () => {
         assert.equal(submitSubForm, false);
         assert.deepEqual(!!subFormSubmission, false);
         assert.equal(!!mainFormSubmission.data?.form?._id, false);
-        assert.deepEqual(mainFormSubmission.data?.form?.data, { textField: 'test' });
+        assert.deepEqual(mainFormSubmission.data?.form?.data, { textField: 'test', textArea: '' });
         done();
       });
     }).catch((err) => done(err));

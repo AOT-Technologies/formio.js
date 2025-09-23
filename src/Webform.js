@@ -374,6 +374,16 @@ export default class Webform extends NestedDataComponent {
         return this.options.shadowRoot;
     }
 
+
+    // Webforms have no default value setting, so this should be always false
+    // I does not affect setting default value to nested forms
+    get shouldAddDefaultValue() {
+      return false;
+    }  
+    get componentsMap() {
+        return this.childComponentsMap || {};
+    }
+
     /**
      * Add a language for translations
      * @param {string} code - The language code for the language being added.
@@ -841,7 +851,7 @@ export default class Webform extends NestedDataComponent {
     }
 
     saveDraft() {
-        if (!this.draftEnabled) {
+        if (!this.draftEnabled || this.parent?.component.reference === false) {
             return;
         }
         if (!this.formio) {
@@ -1277,7 +1287,7 @@ export default class Webform extends NestedDataComponent {
         // Mark any components as invalid if in a custom message.
         const componentErrors = {};
         errors.forEach((err) => {
-            const path = err.path || err.context?.path || err.component?.key;
+            const path = getStringFromComponentPath(err.path) || err.context?.path || err.component?.key;
             if (!componentErrors[path]) {
                 componentErrors[path] = [];
             }

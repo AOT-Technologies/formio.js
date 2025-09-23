@@ -2,14 +2,18 @@ import assert from 'power-assert';
 import _ from 'lodash';
 import Harness from '../harness';
 import WebformBuilder from '../../src/WebformBuilder';
+import BuilderUtils from '../../src/utils/builder';
 import Builders from '../../src/builders';
 import { Formio } from '../../src/Formio';
 import { uniqueApiKeys, uniqueApiKeysLayout, uniqueApiKeysSameLevel, columnsForm, resourceKeyCamelCase, uniqueApiKeysTranslation } from '../formtest';
-import sameApiKeysLayoutComps from '../forms/sameApiKeysLayoutComps';
 import testApiKeysUniquifying from '../forms/testApiKeysUniquifying';
 import formBasedOnWizard from '../forms/formBasedOnWizard';
 import formWithFormController from '../forms/formWithFormController';
 import simpleWebform from '../forms/simpleWebform';
+import testUniqueApiKey from '../forms/testUniqueApiKey';
+import FormBuilder from '../../src/FormBuilder';
+import { wait } from '../util.js';
+import * as datagridWithNestedForm from '../forms/datagridWithNestedForm.js';
 
 global.requestAnimationFrame = (cb) => cb();
 global.cancelAnimationFrame = () => {};
@@ -23,6 +27,41 @@ describe('WebformBuilder tests', function() {
     const builder = Harness.getBuilder();
     assert(builder instanceof WebformBuilder, 'Builder must be an instance of FormioFormBuilder');
     done();
+  });
+
+  it("Should open only one default opened group at a time", async () => {
+    const builderOptions = {
+      some_group1: {
+        title: "Components group 1",
+        weight: 10,
+        default: true,
+        components: {
+          content: true,
+        }
+      },
+      some_group2: {
+        title: "Components group 2",
+        weight: 9,
+        default: true,
+        components: {
+          captcha: true
+        }
+      }
+    }
+    const builder = new FormBuilder(document.createElement('div'), { display: 'form', components: [] }, { builder: builderOptions });
+    await builder.ready;
+    const sidebarContainer = builder.element.querySelector('[ref="sidebar-groups"]');
+    const groupsCollapse = [...sidebarContainer.querySelectorAll('[ref="sidebar-group"]')];
+    // Should be opened only one group with default = true. As we get sort ascending (by weight field) the "Components group 2" will be visible
+    groupsCollapse.forEach(x => {
+      const id = x.getAttribute("id");
+      if (id.includes("some_group2")) {
+        assert.equal(x.classList.contains('show'), true);
+      }
+      else {
+        assert.equal(x.classList.contains('show'), false);
+      }
+    })
   });
 
   it("Should not show errors with default array values", (done) => {
@@ -86,10 +125,29 @@ describe('WebformBuilder tests', function() {
 
   it('Should not show unique API error when components with same keys are inside and outside of the Data component', (done) => {
     const builder = Harness.getBuilder();
-    builder.webform.setForm(uniqueApiKeys).then(() => {
+    builder.webform.setForm(testUniqueApiKey).then(() => {
+      const tabs = builder.webform.getComponent('tabs1');
+      const newTextField = {
+        "label": "Text Field",
+        "applyMaskOn": "change",
+        "tableView": true,
+        "validateWhenHidden": false,
+        "key": "textField",
+        "type": "textfield",
+        "input": true
+        }
+      BuilderUtils.uniquify(builder.findNamespaceRoot(tabs), newTextField);
+      assert.equal(newTextField.key, 'textField3');
+      done();
+    }).catch(done);
+  });
+
+  it('Should uniquify the key for the component inside layout component that inside container', (done) => {
+    const builder = Harness.getBuilder();
+    builder.webform.setForm(uniqueApiKeysTranslation).then(()=>{
       builder.highlightInvalidComponents();
       const component = builder.webform.getComponent(['textField']);
-      assert.equal(component.visibleErrors.length, 0);
+      assert.equal(component.visibleErrors.length, 1);
       done();
     }).catch(done);
   });
@@ -109,16 +167,6 @@ describe('WebformBuilder tests', function() {
     builder.setForm(resourceKeyCamelCase).then(() => {
       const component = builder.webform.getComponent('CalendarID');
       assert.equal(!!document.querySelector(`[name='data[${component.key}]']`), true);
-      done();
-    }).catch(done);
-  });
-
-  it('Should show unique API error when layout components have same keys', (done) => {
-    const builder = Harness.getBuilder();
-    builder.webform.setForm(sameApiKeysLayoutComps).then(() => {
-      builder.highlightInvalidComponents();
-      const component = builder.webform.getComponent(['tabs']);
-      assert.equal(component.visibleErrors.length, 1, 'Should show Unique API Key error');
       done();
     }).catch(done);
   });
@@ -394,6 +442,36 @@ describe('WebformBuilder tests', function() {
     const webformBuilder = new WebformBuilder({});
     assert.equal(webformBuilder.hasEditTabs('abc123'), false);
   });
+
+  it('Should not duplicate nested components of the DataGrid for new Data components', (done) => {
+    const builder = Harness.getBuilder();
+    builder.setForm({}).then(() => {
+      Harness.buildComponent('datagrid');
+      setTimeout(() => {
+        Harness.saveComponent();
+        setTimeout(() => {
+          const dataGrid = builder.webform.element.querySelector('[ref="dataGrid-container"]');
+          Harness.buildComponent('textfield', dataGrid);
+          setTimeout(() => {
+            Harness.saveComponent();
+            setTimeout(() => {
+              Harness.buildComponent('datagrid');
+              setTimeout(()=> {
+                Harness.saveComponent();
+                setTimeout(()=> {
+                  const dataGridWithNestedComp = builder.webform.getComponent('dataGrid');
+                  assert.equal(dataGridWithNestedComp.components.length, 1);
+                  const dataGridEmpty = builder.webform.getComponent('dataGrid1');
+                  assert.equal(dataGridEmpty.components.length, 0);
+                  done();
+                }, 150);
+              }, 150);
+            }, 150);
+          }, 150);
+        }, 150);
+      }, 150);
+    })
+  })
 });
 
 describe('Select Component selectData property', () => {
@@ -787,5 +865,30 @@ describe('Select Component selectData property', () => {
   after((done) => {
     Formio.makeRequest = originalMakeRequest;
     Harness.builderAfter(done);
+  });
+});
+
+describe('WebformBuilder with nested forms', function () {
+  const originalMakeRequest = Formio.makeRequest;
+  before((done) => {
+    Formio.makeRequest = (formio, type, url, method, data) => {
+      if (type === 'form' && method === 'get' && (url).includes('/687a3d82319f0b6faeb35735')) {
+        return Promise.resolve(datagridWithNestedForm.nestedForm);
+      };
+      return originalMakeRequest(formio, type, url, method, data);
+    }
+    done();
+  })
+  it('Should not validate a nested form inside of dataGrid in edit mode', async () => {
+    const comp = _.cloneDeep(datagridWithNestedForm.myForm);
+    const builder = Harness.getBuilder();
+    await builder.webform.setForm(comp);
+    const grid = builder.webform.components[0];
+    const editComponentRef = grid.refs.editComponent;
+    const clickEvent = new Event('click');
+    editComponentRef.dispatchEvent(clickEvent);
+    await wait(600);
+    const errors = builder.editForm.validate(builder.editForm.data, { dirty: true });
+    assert.strictEqual(errors.length, 0);
   });
 });

@@ -591,8 +591,7 @@ export default class NestedComponent extends Field {
 
     element = this.hook('attachComponents', element, components, container, this);
     if (!element) {
-      // Return a non-resolving promise.
-      return (new Promise(() => {}));
+      return Promise.resolve();
     }
 
     let index = 0;
@@ -618,6 +617,9 @@ export default class NestedComponent extends Field {
     _.remove(components, { id: component.id });
     if (this.componentsMap[component.path]) {
       delete this.componentsMap[component.path];
+    }
+    if (this.root?.componentsMap[component.path]) {
+      delete this.root?.componentsMap[component.path];
     }
   }
 
@@ -745,7 +747,7 @@ export default class NestedComponent extends Field {
 
   validationProcessor({ scope, data, row, instance, paths }, flags) {
     const { dirty } = flags;
-    if (this.root?.hasExtraPages && this.page !== this.root.page) {
+    if (this.root && this.root.hasSubWizards && this.page !== this.root.page) {
       instance = this.componentsMap?.hasOwnProperty(paths.dataPath)
         ? this.componentsMap[paths.dataPath]
         : this.getComponent(paths.dataPath);
@@ -915,7 +917,7 @@ export default class NestedComponent extends Field {
       return false;
     }
     if (component.type === 'components') {
-      if (component.tree && component.hasValue(value)) {
+      if ((component.tree || component.hasInput) && component.hasValue(value)) {
         return component.setValue(_.get(value, component.key), flags);
       }
       return component.setValue(value, flags);

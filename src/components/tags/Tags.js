@@ -1,6 +1,6 @@
 import { componentValueTypes, getComponentSavedTypes } from '../../utils';
 import Input from '../_classes/input/Input';
-import Choices from '@formio/choices.js';
+import Choices from 'choices.js';
 
 export default class TagsComponent extends Input {
   static schema(...extend) {
@@ -146,7 +146,7 @@ export default class TagsComponent extends Input {
     const changed = super.setValue(value, flags);
     if (this.choices) {
       let dataValue = this.dataValue;
-      this.choices.removeActiveItems();
+      this.choices.clearStore();
       if (dataValue) {
         if (typeof dataValue === 'string') {
           dataValue = dataValue.split(this.delimiter).filter(result => result);
@@ -179,6 +179,14 @@ export default class TagsComponent extends Input {
     if (this.refs.input && this.refs.input.length) {
       this.refs.input[0].parentNode.lastChild.focus();
     }
+  }
+
+  getValue() {
+    if (this.choices) {
+      const value = this.choices.getValue(true);
+      return value.join(`${this.delimiter}`)
+    }
+    return super.getValue()
   }
 
   getValueAsString(value) {

@@ -28,6 +28,119 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
  - Initial commit with addition of ADVANCED conditions in Logic area of components(https://aottech.atlassian.net/browse/FWF-3425). 
  - Moving npm package from personal to organization npm (https://aottech.atlassian.net/browse/FWF-3658)
 
+## 5.2.2
+### Changed
+ - Official Release
+
+## 5.2.2-rc.1
+### Changed
+ - Patch: include DefaultEvaluator in the Formio object
+
+## 5.2.1
+### Changed
+ - Official Release
+ - Updated @formio/bootstrap@3.1.2
+ - Updated @formio/core@2.5.1
+
+## 5.2.1-rc.17
+### Changed
+ - FIO-10376: Fixes an issue where WizardBuiler is not fully destroyed and keeps listening to saveComponent event leadign to unexpected behaviour
+
+## 5.2.1-rc.16
+### Changed
+ - FIO-10570: fixed failing test
+
+## 5.2.1-rc.15
+### Changed
+ - Updated @formio/core@2.5.1-rc.9
+
+## 5.2.1-rc.14
+### Changed
+ - FIO-10552: revert change to pagination styling
+ - FIO-10550: fixed an issue where front validation doesnot work for nested form components inside nested wizard
+
+## 5.2.1-rc.13
+### Changed
+ - syncing commit from monorepo. PR: 373, Title: FIO-10360: Fix Data table
+ - FIO-9942: interpolate fix
+ - FIO-10369: fixed an issue where validation does not work well for components inside conditional nested form
+ - FIO-10525 fixed issue with duplicated nested components for new data coimponents
+ - FIO-10425: Fixed issues where fields with errors in nested forms with in wizards are not properly highlighting when you click the error link
+
+## 5.2.1-rc.12
+### Changed
+ - FIO-9780 Fixed inability to save component settings if nested components are required
+ - Fixed an issue where the Select component value would get reset to '' instead of the emptyValue when choices is used.
+
+## 5.2.1-rc.11
+ - Revert FIO-10445: Fixes an issue where value of componets with omitValueWhenHidden inside conditionally hidden layout component is not getting cleared
+
+## 5.2.1-rc.10
+### Changed
+ - FIO-10320: Should not show a tag after removal
+
+## 5.2.1-rc.9
+### Changed
+ - Updated @formio/core@2.5.1-rc.8
+ - FIO-10445: Fixes an issue where value of componets with omitValueWhenHidden inside conditionally hidden layout component is not getting cleared
+ - FIO-10443: Fixed issue where a Radio button component within an EditGrid would not signal that the options are loaded causing the form to not submit
+ - FIO-10396:  Fixes an issue where data of conditionally shown nested form inside nested form inside DataGrid is not passed to the root form
+
+## 5.2.1-rc.8
+### Changed
+ - Updated @formio/core@2.5.1-rc.7
+
+## 5.2.1-rc.7
+### Changed
+ - Updated @formio/bootstrap@3.1.2-rc.3
+ - FIO-10405 error validation in nested form in edit mode
+ - FIO-10391: Fixes a run-time error when Wizard page has a logic
+
+## 5.2.1-rc.6
+### Changed
+ - Updated @formio/bootstrap@3.1.2-rc.2
+ - Updated @formio/core@2.5.1-rc.6
+ - FIO-10368: Fixes an issue where Data Grid row added inside nested Wizard will not get validated on nextPage
+ - Fixed failing tests
+
+## 5.2.1-rc.5
+### Changed
+ - Updated @formio/core@2.5.1-rc.5
+
+## 5.2.1-rc.4
+### Changed
+ - Updated @formio/core@2.5.1-rc.4
+
+## 5.2.1-rc.3
+### Changed
+ - FIO-10356-10363: fixed PDF builder issues related to unique key validation and edit modal opening
+
+## 5.2.1-rc.2
+### Changed
+ - Updated @formio/core@2.5.1-rc.3
+
+### Changed
+ - FIO-10298: fixed an issue where server errors are not highlighted inside nested components
+ - FIO-9693: fixed select component with custom data source
+ 
+## 5.2.1-rc.1
+### Changed
+ - Updated @formio/bootstrap@3.1.2-rc.1
+ - Updated @formio/core@2.5.1-rc.2
+ - FIO-8771 Included File Component in Review Page Component
+ - FIO-9246 fixed saving draft for form with nested form and reference false
+ - FIO-9241: Correctly set current page after conditionally hiding page in sibling nested wizard
+ - FIO-9170 Added a fix for default templates to include custom components
+ - FIO-9339: fixed an issue where preview shows an error when editing component JSON
+ - FIO-9872 fixed opening modal edit window for custom component
+ - FIO-10214: fixed types
+ - FIO-10200: fix conditionals checking after form submitting
+ - FIO-10250: Prevents an error when dropping a component inside WizardB…
+ - FIO-10159: fixed an issue where value of the Custom component is not saved
+ - FIO-10111: fixed na issue where layout components are wrongly considered to have the same path and show the repeated key validation error
+ - FIO-9937 Fixed edge cases for clearOnHide with nested forms + new test cases
+ - FIO-8548: Update choices.js to 11 version
+
 ## 5.2.0
 ### Changed
  - Official Release

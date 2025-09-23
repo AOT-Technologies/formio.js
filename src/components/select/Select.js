@@ -1,7 +1,6 @@
 import _ from 'lodash';
 import { Formio } from '../../Formio';
 import ListComponent from '../_classes/list/ListComponent';
-import Input from '../_classes/input/Input';
 import Form from '../../Form';
 import {
   getRandomComponentId,
@@ -423,6 +422,21 @@ export default class SelectComponent extends ListComponent {
     this.serverCount = this.downloadedResources.length;
   }
 
+  shouldResetChoicesItems(items) {
+    if (this.choices._store.choices.length !== items.length) {
+      return true;
+    }
+
+    for (let item of items) {
+      const choicesItem = this.choices._store.choices.find((i) => i.label === item.label);
+      if (!choicesItem) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   /* eslint-disable max-statements */
   setItems(items, fromSearch) {
     this.selectItems = items;
@@ -522,7 +536,14 @@ export default class SelectComponent extends ListComponent {
     });
 
     if (this.choices) {
-      this.choices.setChoices(this.selectOptions, 'value', 'label', true);
+      this.choices.setChoices(
+        this.selectOptions,
+        'value',
+        'label',
+        true,
+        true,
+        !fromSearch && this.shouldResetChoicesItems(this.selectOptions),
+      );
     }
     else if (this.loading) {
       // Re-attach select input.
@@ -913,8 +934,8 @@ export default class SelectComponent extends ListComponent {
       removeItemButton: this.component.disabled ? false : _.get(this.component, 'removeItemButton', true),
       itemSelectText: '',
       classNames: {
-        containerOuter: 'choices form-group formio-choices',
-        containerInner: this.transform('class', 'form-control ui fluid selection dropdown')
+        containerOuter: ['choices', 'form-group', 'formio-choices'],
+        containerInner: this.transform('class', 'form-control ui fluid selection dropdown').split(' '),
       },
       addItemText: false,
       allowHTML: true,
@@ -946,6 +967,7 @@ export default class SelectComponent extends ListComponent {
       ),
       valueComparer: _.isEqual,
       resetScrollPosition: false,
+      duplicateItemsAllowed: false,
       ...customOptions,
     };
   }
@@ -1026,7 +1048,7 @@ export default class SelectComponent extends ListComponent {
         this.addEventListener(this.choices.containerOuter.element, 'focus', () => this.focusableElement.focus());
       }
 
-      Input.prototype.addFocusBlurEvents.call(this, this.focusableElement);
+      this.addFocusBlurEvents(this.choices.input.element);
 
       if (this.itemsFromUrl && !this.component.noRefreshOnScroll) {
         this.scrollList = this.choices.choiceList.element;
@@ -1102,14 +1124,6 @@ export default class SelectComponent extends ListComponent {
     if (this.shouldPositionDropdown) {
       this.addEventListener(input, 'highlightChoice', () => {
         this.positionDropdown();
-      });
-    }
-
-    if (this.choices && choicesOptions.placeholderValue && this.choices._isSelectOneElement) {
-      this.addPlaceholderItem(choicesOptions.placeholderValue);
-
-      this.addEventListener(input, 'removeItem', () => {
-        this.addPlaceholderItem(choicesOptions.placeholderValue);
       });
     }
 
@@ -1212,21 +1226,6 @@ export default class SelectComponent extends ListComponent {
     if (this.component.refreshOnBlur) {
       this.on('blur', (instance) => {
         this.checkRefreshOn([{ instance, value: instance.dataValue }], { fromBlur: true });
-      });
-    }
-  }
-
-  addPlaceholderItem(placeholderValue) {
-    const items = this.choices._store.activeItems;
-    if (!items.length) {
-      this.choices._addItem({
-        value: '',
-        label: placeholderValue,
-        choiceId: 0,
-        groupId: -1,
-        customProperties: null,
-        placeholder: true,
-        keyCode: null
       });
     }
   }
@@ -1371,7 +1370,7 @@ export default class SelectComponent extends ListComponent {
     }
     // Choices will return undefined if nothing is selected. We really want '' to be empty.
     if (value === undefined || value === null) {
-      value = '';
+      value = this.emptyValue;
     }
     return value;
   }

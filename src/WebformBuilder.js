@@ -10,6 +10,7 @@ import {
   getStringFromComponentPath,
   eachComponent,
   getComponent,
+  componentInfo
 } from './utils';
 import BuilderUtils from './utils/builder';
 import _ from 'lodash';
@@ -81,7 +82,16 @@ export default class WebformBuilder extends Component {
     this.groupOrder = this.groupOrder
       .filter(group => group && !group.ignore)
       .sort((a, b) => a.weight - b.weight)
-      .map(group => group.key);
+
+    const defaultOpenedGroup = this.groupOrder.find(x => x.key !== 'basic' && x.default);
+    if (defaultOpenedGroup) {
+      this.groupOrder.forEach(x => {
+        if ('default' in x && x.key !== defaultOpenedGroup.key) {
+          x.default = false;
+        }
+      });
+    }
+    this.groupOrder = this.groupOrder.map(group => group.key);
 
     for (const type in Components.components) {
       const component = Components.components[type];
@@ -1246,6 +1256,17 @@ export default class WebformBuilder extends Component {
           'fields.month.required',
           'fields.year.required',
         ]));
+        if (defaultValueComponent.component.components) {
+          if (!this.originalDefaultValue) {
+            this.originalDefaultValue = fastCloneDeep(defaultValueComponent.component);
+          }
+
+          eachComponent(defaultValueComponent.component.components, (comp => {
+            if (comp.validate?.required) {
+              comp.validate.required = false;
+            }
+          }));
+        }
         const parentComponent = defaultValueComponent.parent;
         let tabIndex = -1;
         let index = -1;
@@ -1266,7 +1287,7 @@ export default class WebformBuilder extends Component {
           const newComp = parentComponent.addComponent(defaultValueComponent.component, defaultValueComponent.data, sibling);
           _.pull(newComp.validators, 'required');
           parentComponent.tabs[tabIndex].splice(index, 1, newComp);
-          newComp.checkValidity = () => true;
+          newComp.processOwnValidation = true;
           newComp.build(defaultValueComponent.element);
           if (this.preview && !this.preview.defaultChanged) {
             const defaultValue = _.get(this.preview._data, this.editForm._data.key);
@@ -1302,15 +1323,18 @@ export default class WebformBuilder extends Component {
     const keys = new Map();
     eachComponent(this.form.components, (comp, path, components, parent, paths) => {
       const isRadioCheckbox = comp.type === 'checkbox' && comp.inputType === 'radio';
-      if (keys.has(paths.dataPath)) {
-        const onlyRadioCheckboxes= repeatablePaths[paths.dataPath]?.onlyRadioCheckboxes === false ? false : isRadioCheckbox;
-        repeatablePaths[paths.dataPath] = {
-          comps: [...(repeatablePaths[paths.dataPath]?.comps || []), keys.get(paths.dataPath), comp],
-          onlyRadioCheckboxes,
-        };
-      }
-      else {
-        keys.set(paths.dataPath, comp);
+      const isLayout = componentInfo(comp).layout;
+      if (!isLayout) {
+        if (keys.has(paths.dataPath)) {
+          const onlyRadioCheckboxes= repeatablePaths[paths.dataPath]?.onlyRadioCheckboxes === false ? false : isRadioCheckbox;
+          repeatablePaths[paths.dataPath] = {
+            comps: [...(repeatablePaths[paths.dataPath]?.comps || []), keys.get(paths.dataPath), comp],
+            onlyRadioCheckboxes,
+          };
+        }
+        else {
+          keys.set(paths.dataPath, comp);
+        }
       }
     }, true);
     const componentsWithRepeatablePaths = [];
@@ -1331,6 +1355,9 @@ export default class WebformBuilder extends Component {
       if (repeatablePathsComps.includes(comp.component)) {
         comp.setCustomValidity(this.t('apiKey', { key: comp.key }));
         hasInvalidComponents = true;
+      }
+      else {
+        comp.setCustomValidity();
       }
     });
 
@@ -1358,6 +1385,10 @@ export default class WebformBuilder extends Component {
     if (index !== -1) {
       let submissionData = this.editForm.submission.data;
       submissionData = submissionData.componentJson || submissionData;
+      if (submissionData.components && this.originalDefaultValue) {
+        submissionData.components = this.originalDefaultValue.components;
+        this.originalDefaultValue = null;
+      }
       const fieldsToRemoveDoubleQuotes = ['label', 'tooltip'];
 
       this.replaceDoubleQuotes(submissionData, fieldsToRemoveDoubleQuotes);
@@ -1480,7 +1511,8 @@ export default class WebformBuilder extends Component {
           helplinks: this.helplinks,
         }));
         this.editForm.attach(this.componentEdit.querySelector(`[${this._referenceAttributeName}="editForm"]`));
-        this.updateComponent(this.editForm.submission.data ?? component);
+        const editFormData = this.editForm.submission?.data;
+        this.updateComponent(editFormData?.componentJson || editFormData || component);
         this.attachEditComponentControls(component, parent, isNew, original, ComponentClass);
       });
     });
@@ -1942,7 +1974,7 @@ export default class WebformBuilder extends Component {
 
   hasEditTabs(type) {
     // If the component type does not exist then it has no edit tabs
-    if(!Components.components[type]){
+    if(!Components.components[type === 'custom' ? 'unknown' : type]){
       return false;
     }
     const editTabs = getComponent(Components.components[type === 'custom' ? 'unknown' : type].editForm().components, 'tabs', true).components;

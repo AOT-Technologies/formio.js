@@ -91,6 +91,7 @@ import translationErrorMessages from '../forms/translationErrorMessages.js';
 import formWithHiddenComponents from '../forms/formWithHiddenComponents.js';
 import formWithShowAsString from '../forms/formWithShowAsString.js';
 import formWithMergeComponentSchemaAndCustomLogic from '../forms/formWithMergeComponentSchemaAndCustomLogic.js';
+import formWithServerValidation from '../forms/formWithServerValidation.js';
 
 const SpySanitize = sinon.spy(FormioUtils, 'sanitize');
 
@@ -101,6 +102,25 @@ if (_.has(Formio, 'Components.setComponents')) {
 /* eslint-disable max-statements  */
 describe('Webform tests', function() {
   this.retries(3);
+
+  it('Should show and highlight server validation errors for components inside container and datagrid', function(done) {
+    Formio.createForm(document.createElement('div'), formWithServerValidation.form).then(form => {
+      form.setValue(formWithServerValidation.values);
+
+      setTimeout(() => {
+        form.onSubmissionError(formWithServerValidation.serverErrors);
+        setTimeout(() => {
+          const invalidTextFieldEl = form.element.querySelector('.formio-component-textFieldUnique');
+          const invalidTextFieldInsideDGEl = form.element.querySelector('.formio-component-textField');
+          assert.equal(invalidTextFieldEl.classList.contains('formio-error-wrapper'), true);
+          assert.equal(invalidTextFieldEl.classList.contains('has-message'), true);
+          assert.equal(invalidTextFieldInsideDGEl.classList.contains('formio-error-wrapper'), true);
+          assert.equal(invalidTextFieldInsideDGEl.classList.contains('has-message'), true);
+          done();
+        }, 200);
+      }, 100);
+    }).catch((err) => done(err));
+  });
 
   it('Should resolve dataReady promise when a form includes hidden/conditionally hidden components', function(done) {
     const formElement = document.createElement('div');
@@ -115,7 +135,6 @@ describe('Webform tests', function() {
       }, 300);
     }).catch((err) => done(err));
   });
-
 
   it('Should merge component schema when condition is executed and set/keep values ', function(done) {
     const formElement = document.createElement('div');
@@ -783,10 +802,10 @@ describe('Webform tests', function() {
       const blurEvent = new Event('blur');
 
       const selectChoices = form.getComponent('selectChoices');
-      selectChoices.focusableElement.dispatchEvent(focusEvent);
+      selectChoices.choices.input.element.dispatchEvent(focusEvent);
 
       setTimeout(() => {
-        selectChoices.focusableElement.dispatchEvent(blurEvent);
+        selectChoices.choices.input.element.dispatchEvent(blurEvent);
 
         const selectHtml = form.getComponent('selectHtml');
         selectHtml.refs.selectContainer.dispatchEvent(focusEvent);
@@ -1092,7 +1111,7 @@ describe('Webform tests', function() {
     form.setForm(translationTestForm).then(() => {
       setTimeout(() => {
         const selectComp = form.getComponent('select');
-        const options = selectComp.element.querySelector('[role="listbox"]').children;
+        const options = selectComp.choices.choiceList.element.children;
         const option1 = options[0].textContent.trim();
         const option2 = options[1].textContent.trim();
         const label = selectComp.element.querySelector('label').textContent.trim();
@@ -3660,6 +3679,30 @@ describe('Webform tests', function() {
           }, 300);
         }, 300);
       }).catch((err) => done(err));
+    });
+
+    it(`Should check conditionals after submitting form `, function(done) {
+      const formElement = document.createElement('div');
+      const form = new Webform(formElement);
+
+      form.setForm(formsWithNewSimpleConditions.form9).then(() => {
+        const textField = form.getComponent('textField');
+        const fieldWithConditions = form.getComponent('textField1');
+        textField.setValue('hide');
+        setTimeout(() => {
+          assert.equal(fieldWithConditions.visible, false);
+          form.submit();
+
+            setTimeout(() => {
+              textField.setValue('show');
+              setTimeout(()=> {
+                assert.equal(fieldWithConditions.visible, true);
+                done();
+              }, 400)
+            }, 400)
+        }, 400);
+      })
+      .catch((err) => done(err));
     });
   });
 

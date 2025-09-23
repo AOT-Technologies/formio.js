@@ -32,6 +32,7 @@ import wizardWithPanel from '../forms/wizardWithPanel';
 import wizardWithWizard from '../forms/wizardWithWizard';
 import simpleTwoPagesWizard from '../forms/simpleTwoPagesWizard';
 import wizardWithNestedWizardInEditGrid from '../forms/wizardWithNestedWizardInEditGrid';
+import wizardWithNestedWizardsAdvConditional from '../forms/wizardWithNestedWizardsAdvConditional';
 import wizardNavigateOrSaveOnEnter from '../forms/wizardNavigateOrSaveOnEnter';
 import wizardWithFieldsValidationChild from '../forms/wizardWithFieldsValidationChild';
 import wizardWithFieldsValidationParent from '../forms/wizardWithFieldsValidationParent';
@@ -45,10 +46,13 @@ import WizardWithCheckboxes from '../forms/wizardWithCheckboxes';
 import WizardWithRequiredFields from '../forms/wizardWithRequiredFields';
 import formWithNestedWizardAndRequiredFields from '../forms/formWithNestedWizardAndRequiredFields';
 import simpleWizardWithRequiredFields from '../forms/simpleWizardWithRequiredFields';
+import testRequiredFieldsInNestedWizard from '../forms/testRequiredFieldsInNestedWizard';
+import testWizardWithNestedForm from '../forms/testWizardWithNestedForm';
 import { wait } from '../util';
 
 // eslint-disable-next-line max-statements
 describe('Wizard tests', () => {
+  window.scrollTo = () => {};
   // helpers
   const clickWizardBtn = (wizard, pathPart, clickError) => {
     const btn = _.get(wizard.refs, clickError ? pathPart : `${wizard.wizardKey}-${pathPart}`);
@@ -195,6 +199,130 @@ describe('Wizard Form with Nested Form validation', () => {
       }
   });
 });
+
+  it('Should show validation error for required components inside nested form on submit when the page with nested from is not visited', function (done) {
+    const formElement = document.createElement('div');
+  
+    const parentWizard = _.cloneDeep(testWizardWithNestedForm.wizard);
+    const topNestedForm = _.cloneDeep(testWizardWithNestedForm.nestedFormTop);
+    const childNestedForm = _.cloneDeep(testWizardWithNestedForm.nestedFormChild);
+    const originalMakeRequest = Formio.makeRequest;
+    Formio.setUser({
+      _id: '123',
+    });
+
+    Formio.makeRequest = (formio, type, url, method, data) => {
+      if (type === 'form' && method === 'get') {
+        if (url.endsWith('testwizard')) {
+          return Promise.resolve(parentWizard);
+        } else if (url.includes('689f3451fe27f634ffeba379')) {
+          return Promise.resolve(topNestedForm);
+        } else if (url.includes('689f3451fe27f634ffeba372')) {
+          return Promise.resolve(childNestedForm);
+        } else {
+          return Promise.resolve();
+        }
+      }
+    };
+    Formio.createForm(formElement, 'http://localhost:3000/zarbzxibjafpcjb/testwizard')
+      .then((wizard) => {
+        setTimeout(() => {
+          clickWizardBtn(wizard, 'link[2]');
+
+          setTimeout(() => {
+            assert.equal(wizard.page, 2);
+            clickWizardBtn(wizard, 'submit');
+
+            setTimeout(() => {
+              assert.equal(wizard.errors.length, 1);
+              assert.equal(wizard.errors[0].message, "Text Field is required");
+              Formio.makeRequest = originalMakeRequest;
+              Formio.setUser();
+              done();
+            }, 300);
+          }, 300);
+        }, 300);
+      })
+      .catch((err) => done(err));
+  });
+
+  it('Should show validation error on next button click for required components inside nested form that is inside nested wizard', function (done) {
+    const formElement = document.createElement('div');
+    const nestedWizard = _.cloneDeep(testRequiredFieldsInNestedWizard.nestedWizard);
+    const parentWizard = _.cloneDeep(testRequiredFieldsInNestedWizard.parentWizard);
+    const nestedForm = _.cloneDeep(testRequiredFieldsInNestedWizard.nestedForm);
+    const originalMakeRequest = Formio.makeRequest;
+    Formio.setUser({
+      _id: '123',
+    });
+
+    Formio.makeRequest = (formio, type, url, method, data) => {
+      if (type === 'form' && method === 'get') {
+        if (url.endsWith('testwizard')) {
+          return Promise.resolve(parentWizard);
+        } else if (url.includes('6895e4628d9bfeaf8fe1a96e')) {
+          return Promise.resolve(nestedWizard);
+        } else if (url.includes('6895e4628d9bfeaf8fe1a95f')) {
+          return Promise.resolve(nestedForm);
+        } else {
+          return Promise.resolve();
+        }
+      }
+    };
+    Formio.createForm(formElement, 'http://localhost:3000/zarbzxibjafpcjb/testwizard')
+      .then((wizard) => {
+        setTimeout(() => {
+          clickWizardBtn(wizard, 'next');
+
+          setTimeout(() => {
+            assert.equal(wizard.page, 1);
+            const radio = wizard.getComponent('formAOrB');
+            radio.setValue('a');
+            radio.triggerChange();
+
+            setTimeout(() => {
+              const formA = wizard.getComponent('formA');
+              assert.equal(wizard.page, 1);
+              assert.equal(formA.visible, true);
+
+              clickWizardBtn(wizard, 'next');
+
+              setTimeout(() => {
+                assert.equal(wizard.page, 1);
+                assert.equal(formA.visible, true);
+                assert.equal(wizard.errors.length, 1);
+                radio.setValue('');
+                radio.triggerChange();
+
+                setTimeout(() => {
+                  assert.equal(wizard.page, 1);
+                  assert.equal(formA.visible, false);
+                  assert.equal(wizard.errors.length, 0);
+                  radio.setValue('a');
+                  radio.triggerChange();
+
+                  setTimeout(() => {
+                    assert.equal(wizard.page, 1);
+                    assert.equal(formA.visible, true);
+                    clickWizardBtn(wizard, 'next');
+
+                    setTimeout(() => {
+                      assert.equal(wizard.page, 1);
+                      assert.equal(formA.visible, true);
+                      assert.equal(wizard.errors.length, 1);
+                      Formio.makeRequest = originalMakeRequest;
+                      Formio.setUser();
+                      done();
+                    }, 300);
+                  }, 300);
+                }, 300);
+              }, 300);
+            }, 300);
+          }, 300);
+        }, 300);
+      })
+      .catch((err) => done(err));
+  });
 
   it('Should recalculate values for components with "allow override" after wizard is canceled', function(done) {
     const formElement = document.createElement('div');
@@ -2107,6 +2235,31 @@ it('Should show tooltip for wizard pages', function(done) {
       })
       .catch(done);
   });
+
+  it('Should set correct page index after hiding a conditionally hidden page in sibling nested wizard.', async () => {
+    const formElement = document.createElement('div');
+    wizardForm = new Wizard(formElement);
+    await wizardForm.setForm(wizardWithNestedWizardsAdvConditional);
+    // navigate forward 4 pages to B2
+    // A1 -> A2 -> A3 -> B1 -> B2
+    for (let i = 0; i < 4; i++) {
+      wizardForm.nextPage();
+      await wait(200);
+    }
+    const getPageTitles = () => wizardForm.pages.map(p => p.component.title);
+    assert.equal(wizardForm.page, 4);
+    assert.equal(wizardForm.currentPanel.title, 'B2');
+    assert(getPageTitles().includes('A2'));
+    const b2Input = wizardForm.element.querySelector('input[name="data[b2]"]');
+    const inputEvent = new Event('input');
+    b2Input.value = 'hide';
+    b2Input.dispatchEvent(inputEvent);
+    await wait(400);
+    assert(!getPageTitles().includes('A2'), 'A2 is hidden when B2 has a value of "hide"');
+    assert.equal(wizardForm.page, 3, 'A2 is removed from the pages array and the page number/index must be decremented to maintain B2 as the current page');
+    assert.equal(wizardForm.currentPanel.title, 'B2');
+  });
+
   // BUG - uncomment once fixed (ticket FIO-6043)
   // it('Should render all pages as a part of wizard pagination', (done) => {
   //   const formElement = document.createElement('div');
