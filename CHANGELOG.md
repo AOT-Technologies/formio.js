@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [@aot-technologies/formiojs 2.1.0]
+### Fixed
+ - Restored the missing `convertShowToBoolean` import from `@formio/core` in `utils.js`, which caused `ReferenceError: convertShowToBoolean is not defined` for components with simple conditionals (e.g. when dragging components in the form builder)
+ - Locked `@formio/core` to 2.7.0 (was 2.1.0-dev.156, which does not export `convertShowToBoolean`)
+
 ## [Unreleased: 5.1.0-rc.1]
 ### Changed
  - FIO-8270: panel component closing on logic event trigger
