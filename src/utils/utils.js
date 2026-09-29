@@ -8,6 +8,7 @@ import { lodashOperators } from './jsonlogic/operators';
 import { getValue } from './formUtils';
 import { Evaluator } from './Evaluator';
 import ConditionOperators from './conditionOperators';
+import { convertShowToBoolean } from '@formio/core';
 
 const interpolate = Evaluator.interpolate;
 
