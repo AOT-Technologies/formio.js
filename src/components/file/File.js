@@ -1226,7 +1226,7 @@ export default class FileComponent extends Field {
             this.resolvedFiles.push({ fileToSync, fileInfo })
           }
         }
-        return Promise.resolve({ fileToSync, fileInfo });
+        return { fileToSync, fileInfo };
     }));
   }
 
