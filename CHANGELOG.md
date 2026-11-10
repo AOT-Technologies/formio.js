@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [@aot-technologies/formiojs 2.1.1]
+### Fixed
+ - Fixed the return object from the `upload` method in the File Upload `File.js` component that was causing the component to throw the error: `Uncaught (in promise) undefined`
+
 ## [@aot-technologies/formiojs 2.1.0]
 ### Fixed
  - Restored the missing `convertShowToBoolean` import from `@formio/core` in `utils.js`, which caused `ReferenceError: convertShowToBoolean is not defined` for components with simple conditionals (e.g. when dragging components in the form builder)
